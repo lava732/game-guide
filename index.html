@@ -7,6 +7,7 @@
     <title>GamerGuide | 攻略發布系統</title>
 </head>
 <body>
+
     <header>
         <h1>GamerGuide 玩家創作區</h1>
         <div class="auth-panel">
@@ -40,10 +41,9 @@
                     <label for="content">攻略內容：</label>
                     <textarea id="content" required></textarea>
                 </div>
-
                 <div class="form-group">
                     <label for="videoUrl">影片網址連結 (選填)：</label>
-                    <input type="url" id="videoUrl" placeholder="請貼上影片連結 (YouTube網址)">
+                    <input type="url" id="videoUrl" placeholder="請貼上影片連結 (支援 MP4、WebM 或 YouTube 網址)">
                 </div>
 
                 <button type="submit" id="formSubmitBtn" class="btn submit-btn">發布攻略</button>
@@ -52,6 +52,11 @@
         </section>
 
         <section class="article-feed">
+            <div class="search-box">
+                <label for="searchGame">🔍 搜尋遊戲：</label>
+                <input type="text" id="searchGame" placeholder="輸入遊戲名稱關鍵字...">
+            </div>
+
             <h2>🔥 最新玩家攻略</h2>
             <div id="postsContainer"></div>
         </section>
@@ -59,7 +64,6 @@
 
     <script type="module">
         import { initializeApp } from "https://www.gstatic.com/firebasejs/10.8.0/firebase-app.js";
-        // 保持使用彈窗登入方式
         import { getAuth, signInWithPopup, GoogleAuthProvider, signOut, onAuthStateChanged } from "https://www.gstatic.com/firebasejs/10.8.0/firebase-auth.js";
         import { getFirestore, collection, addDoc, doc, updateDoc, deleteDoc, query, orderBy, onSnapshot } from "https://www.gstatic.com/firebasejs/10.8.0/firebase-firestore.js";
 
@@ -81,8 +85,9 @@
         const provider = new GoogleAuthProvider();
 
         let currentUser = null; 
+        let allPosts = []; // 新增：用來暫存從雲端同步下來的所有攻略資料
 
-        // === 1. 登入/登出邏輯 ===
+        // === 1. 登入/登出邏輯 (純彈窗模式) ===
         document.getElementById('loginBtn').addEventListener('click', () => {
             signInWithPopup(auth, provider).catch(err => console.error("彈窗登入失敗:", err));
         });
@@ -108,31 +113,21 @@
                 document.getElementById('postBox').style.display = 'none';
                 resetForm();
             }
+            // 狀態切換時重新渲染列表（確保編輯/刪除按鈕顯示正確）
+            renderPosts(); 
         });
 
-        // 輔助函式：將使用者貼上的各種影片連結轉換成對應的可視化小窗口 HTML
+        // 影片連結解析輔助函式
         function formatVideoEmbed(url) {
             if (!url) return '';
-            
-            // 檢查是否為 YouTube 網址
             const youtubeRegex = /^.*(youtu.be\/|v\/|u\/\w\/|embed\/|watch\?v=|\&v=)([^#\&\?]*).*/;
             const match = url.match(youtubeRegex);
             
             if (match && match[2].length === 11) {
                 const youtubeId = match[2];
-                // 使用 YouTube iframe 嵌入小窗口
-                return `
-                    <div class="video-wrapper">
-                        <iframe class="post-video" src="https://www.youtube.com/embed/${youtubeId}" allowfullscreen></iframe>
-                    </div>
-                `;
+                return `<div class="video-wrapper"><iframe class="post-video" src="https://www.youtube.com/embed/${youtubeId}" allowfullscreen></iframe></div>`;
             } else {
-                // 一般 MP4/WebM 影音網址，使用 HTML5 video 標籤小窗口
-                return `
-                    <div class="video-wrapper">
-                        <video class="post-video" src="${url}" controls preload="metadata"></video>
-                    </div>
-                `;
+                return `<div class="video-wrapper"><video class="post-video" src="${url}" controls preload="metadata"></video></div>`;
             }
         }
 
@@ -142,8 +137,8 @@
             e.preventDefault();
             if (!currentUser) return alert('請先登入！');
 
-            const gameName = document.getElementById('gameName').value;
-            const title = document.getElementById('title').value;
+            const gameName = document.getElementById('gameName').value.trim();
+            const title = document.getElementById('title').value.trim();
             const content = document.getElementById('content').value;
             const videoUrl = document.getElementById('videoUrl').value.trim();
             const editingId = document.getElementById('editingPostId').value;
@@ -170,69 +165,86 @@
             }
         });
 
-        // === 3. 即時同步下載雲端資料庫文章 ===
+        // === 3. 即時同步下載資料與渲染 (整合搜尋邏輯) ===
         function initPostsListener() {
             const q = query(collection(db, "guides"), orderBy("timestamp", "desc"));
             
             onSnapshot(q, (snapshot) => {
-                const postsContainer = document.getElementById('postsContainer');
-                postsContainer.innerHTML = ''; 
-
+                allPosts = []; // 清空暫存
                 snapshot.forEach((doc) => {
-                    const data = doc.data();
-                    const postId = doc.id;
-                    
-                    const postEl = document.createElement('article');
-                    postEl.classList.add('guide-post');
-                    
-                    const showBtn = currentUser && currentUser.uid === data.userId ? 'inline-block' : 'none';
-                    
-                    // 根據網址動態產生影片小視窗
-                    const videoHtml = formatVideoEmbed(data.videoUrl);
-
-                    postEl.innerHTML = `
-                        <h3>${data.title}</h3>
-                        <div class="meta">
-                            <span>遊戲：${data.gameName}</span> 
-                            <span>作者：${data.author}</span> 
-                        </div>
-                        <p class="post-content">${data.content}</p>
-                        ${videoHtml}
-                        <div class="action-group">
-                            <button class="btn edit-btn" style="display:${showBtn}" data-id="${postId}">編輯</button>
-                            <button class="btn delete-btn" style="display:${showBtn}" data-id="${postId}">刪除</button>
-                        </div>
-                    `;
-                    postsContainer.appendChild(postEl);
+                    allPosts.push({
+                        id: doc.id,
+                        ...doc.data()
+                    });
                 });
-
-                // 綁定編輯與刪除事件
-                document.querySelectorAll('.edit-btn').forEach(btn => {
-                    btn.addEventListener('click', (e) => startEdit(e.target.getAttribute('data-id')));
-                });
-                document.querySelectorAll('.delete-btn').forEach(btn => {
-                    btn.addEventListener('click', (e) => handleDelete(e.target.getAttribute('data-id')));
-                });
+                renderPosts(); // 取得新資料後執行渲染
             });
         }
 
+        // 獨立出的渲染函式：負責過濾搜尋字串並畫出 HTML
+        function renderPosts() {
+            const postsContainer = document.getElementById('postsContainer');
+            postsContainer.innerHTML = ''; 
+
+            // 取得搜尋框內的文字（並轉小寫，實現不分大小寫搜尋）
+            const keyword = document.getElementById('searchGame').value.toLowerCase().trim();
+
+            // 篩選出遊戲名稱符合關鍵字的貼文
+            const filteredPosts = allPosts.filter(post => {
+                const gameName = post.gameName ? post.gameName.toLowerCase() : '';
+                return gameName.includes(keyword);
+            });
+
+            if (filteredPosts.length === 0) {
+                postsContainer.innerHTML = `<p style="color: #888; text-align: center; margin-top: 20px;">找不到符合該遊戲名稱的攻略 😭</p>`;
+                return;
+            }
+
+            filteredPosts.forEach((data) => {
+                const postEl = document.createElement('article');
+                postEl.classList.add('guide-post');
+                
+                const showBtn = currentUser && currentUser.uid === data.userId ? 'inline-block' : 'none';
+                const videoHtml = formatVideoEmbed(data.videoUrl);
+
+                postEl.innerHTML = `
+                    <h3>${data.title}</h3>
+                    <div class="meta">
+                        <span>遊戲：${data.gameName}</span> 
+                        <span>作者：${data.author}</span> 
+                    </div>
+                    <p class="post-content">${data.content}</p>
+                    ${videoHtml}
+                    <div class="action-group">
+                        <button class="btn edit-btn" style="display:${showBtn}" data-id="${data.id}">編輯</button>
+                        <button class="btn delete-btn" style="display:${showBtn}" data-id="${data.id}">刪除</button>
+                    </div>
+                `;
+                postsContainer.appendChild(postEl);
+            });
+
+            // 重新綁定事件
+            document.querySelectorAll('.edit-btn').forEach(btn => {
+                btn.addEventListener('click', (e) => startEdit(e.target.getAttribute('data-id')));
+            });
+            document.querySelectorAll('.delete-btn').forEach(btn => {
+                btn.addEventListener('click', (e) => handleDelete(e.target.getAttribute('data-id')));
+            });
+        }
+
+        // 監聽搜尋輸入框：當使用者打字時，即時觸發過濾重新渲染
+        document.getElementById('searchGame').addEventListener('input', renderPosts);
+
         // === 4. 編輯與刪除細節控制 ===
         function startEdit(id) {
-            const btn = document.querySelector(`.edit-btn[data-id="${id}"]`);
-            const post = btn.closest('.guide-post');
+            // 從快取的 allPosts 中直接找出對應的貼文資料，更精準安全
+            const postData = allPosts.find(p => p.id === id);
+            if (!postData) return;
             
-            // 抓取原本貼文存在隱藏或渲染出的資料
-            document.getElementById('gameName').value = post.querySelector('.meta span:nth-child(1)').textContent.replace('遊戲：', '');
-            document.getElementById('title').value = post.querySelector('h3').textContent;
-            document.getElementById('content').value = post.querySelector('.post-content').textContent;
-            
-            // 尋找小視窗內的影片來源網址填回輸入框
-            const videoEl = post.querySelector('video');
-            const iframeEl = post.querySelector('iframe');
-            let oriUrl = '';
-            if (videoEl) oriUrl = videoEl.src;
-            if (iframeEl) oriUrl = iframeEl.src;
-            document.getElementById('videoUrl').value = oriUrl;
+            document.getElementById('gameName').value = postData.gameName || '';
+            document.getElementById('title').value = postData.title || '';
+            document.getElementById('content').value = postData.content || '';
+            document.getElementById('videoUrl').value = postData.videoUrl || '';
 
             document.getElementById('editingPostId').value = id;
             document.getElementById('formTitle').textContent = "✏️ 編輯我的攻略";
@@ -267,6 +279,7 @@
             document.getElementById('cancelEditBtn').style.display = "none";
         }
 
+        // 啟動即時資料監聽
         initPostsListener();
     </script>
 </body>
