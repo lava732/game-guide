@@ -1,0 +1,72 @@
+<!DOCTYPE html>
+<html lang="zh-TW">
+<head>
+    <meta charset="UTF-8">
+    <title>玩家中心 | GamerGuide</title>
+    <link rel="stylesheet" href="css/style.css">
+</head>
+<body>
+    <header>
+        <h1>GamerGuide 玩家創作區</h1>
+        <div class="auth-panel">
+            <img id="userAvatar" class="user-avatar" src="" alt="頭像">
+            <a href="userProfile.html" id = "profileLink" class="btn userProfile-btn" style="display: none;">個人中心</a>
+            <button id="loginBtn" class="btn login-btn">使用 Google 登入</button>
+            <button id="logoutBtn" class="btn logout-btn">登出</button>
+        </div>
+    </header>
+
+    <div class="container">
+        <section class="profile-header" style="text-align: center; padding: 20px;">
+            <img id="profileAvatar" src="" style="width:100px; border-radius:50%;" alt="頭像">
+            <h2 id="profileName">讀取中...</h2>
+            <p>累積發布攻略：<span id="postCount">0</span> 篇</p>
+        </section>
+
+        <section class="article-feed">
+            <h3>我的攻略紀錄</h3>
+            <div id="myPostsContainer"></div>
+        </section>
+    </div>
+
+    <script type="module">
+        import { getAuth, onAuthStateChanged } from "https://www.gstatic.com/firebasejs/10.8.0/firebase-auth.js";
+        import { getFirestore, collection, query, where, onSnapshot } from "https://www.gstatic.com/firebasejs/10.8.0/firebase-firestore.js";
+        
+        // 初始化 Firebase (需放入你的 config)
+        const auth = getAuth();
+        const db = getFirestore();
+
+        onAuthStateChanged(auth, (user) => {
+            if (user) {
+                // 1. 顯示使用者資訊
+                document.getElementById('profileAvatar').src = user.photoURL;
+                document.getElementById('profileName').textContent = user.displayName;
+
+                // 2. 查詢該使用者發布的所有攻略
+                const q = query(collection(db, "guides"), where("userId", "==", user.uid));
+                
+                onSnapshot(q, (snapshot) => {
+                    const container = document.getElementById('myPostsContainer');
+                    document.getElementById('postCount').textContent = snapshot.size;
+                    container.innerHTML = '';
+                    
+                    snapshot.forEach((doc) => {
+                        const data = doc.data();
+                        const el = document.createElement('article');
+                        el.className = 'guide-post';
+                        el.innerHTML = `
+                            <h4>${data.title}</h4>
+                            <p>遊戲：${data.gameName}</p>
+                            <small>發布於：${data.timestamp.toDate().toLocaleDateString()}</small>
+                        `;
+                        container.appendChild(el);
+                    });
+                });
+            } else {
+                window.location.href = 'index.html'; // 未登入則導回首頁
+            }
+        });
+    </script>
+</body>
+</html>
