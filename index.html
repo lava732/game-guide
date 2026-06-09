@@ -3,6 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
+<<<<<<< HEAD
     <title>GamerGuide | 會員攻略發布系統 (含問與答作者標註)</title>
     <style>
         body { font-family: "Microsoft JhengHei", sans-serif; background-color: #121212; color: #e0e0e0; margin: 0; padding: 0; }
@@ -62,6 +63,10 @@
         .edit-btn { background-color: #5cb85c; color: white; display: none; }
         .delete-btn { background-color: #d9534f; color: white; display: none; }
     </style>
+=======
+    <link rel="stylesheet" href="css/style.css" >
+    <title>GamerGuide | 攻略發布系統</title>
+>>>>>>> 54d3e5104959a044af1c8104e76449e7d39a4c9e
 </head>
 <body>
 
@@ -100,6 +105,7 @@
                 <div class="form-group">
                     <label for="videoUrl">影片網址連結 (選填)：</label>
                     <input type="url" id="videoUrl" placeholder="請貼上影片連結 (支援 MP4、WebM 或 YouTube 網址)">
+<<<<<<< HEAD
                 </div>
 
                 <div style="background: #252525; padding: 15px; border-radius: 6px; margin-bottom: 15px; border-left: 3px solid #5cb85c;">
@@ -112,6 +118,8 @@
                         <label for="qaAnswer">詳細解答 (A)：</label>
                         <textarea id="qaAnswer" placeholder="例如：在第一章村莊左側的老鐵匠家後方寶箱內..." style="min-height: 80px;"></textarea>
                     </div>
+=======
+>>>>>>> 54d3e5104959a044af1c8104e76449e7d39a4c9e
                 </div>
 
                 <button type="submit" id="formSubmitBtn" class="btn submit-btn">發布攻略</button>
@@ -153,9 +161,13 @@
         const provider = new GoogleAuthProvider();
 
         let currentUser = null; 
+<<<<<<< HEAD
         let allPosts = []; 
+=======
+        let allPosts = []; // 新增：用來暫存從雲端同步下來的所有攻略資料
+>>>>>>> 54d3e5104959a044af1c8104e76449e7d39a4c9e
 
-        // === 1. 登入/登出邏輯 ===
+        // === 1. 登入/登出邏輯 (純彈窗模式) ===
         document.getElementById('loginBtn').addEventListener('click', () => {
             signInWithPopup(auth, provider).catch(err => console.error("彈窗登入失敗:", err));
         });
@@ -179,6 +191,10 @@
                 document.getElementById('postBox').style.display = 'none';
                 resetForm();
             }
+<<<<<<< HEAD
+=======
+            // 狀態切換時重新渲染列表（確保編輯/刪除按鈕顯示正確）
+>>>>>>> 54d3e5104959a044af1c8104e76449e7d39a4c9e
             renderPosts(); 
         });
 
@@ -252,28 +268,51 @@
             }
         });
 
+<<<<<<< HEAD
         // === 3. 即時同步下載資料與渲染 ===
+=======
+        // === 3. 即時同步下載資料與渲染 (整合搜尋邏輯) ===
+>>>>>>> 54d3e5104959a044af1c8104e76449e7d39a4c9e
         function initPostsListener() {
             const q = query(collection(db, "guides"), orderBy("timestamp", "desc"));
             
             onSnapshot(q, (snapshot) => {
+<<<<<<< HEAD
                 allPosts = []; 
+=======
+                allPosts = []; // 清空暫存
+>>>>>>> 54d3e5104959a044af1c8104e76449e7d39a4c9e
                 snapshot.forEach((doc) => {
                     allPosts.push({
                         id: doc.id,
                         ...doc.data()
                     });
                 });
+<<<<<<< HEAD
                 renderPosts(); 
             });
         }
 
+=======
+                renderPosts(); // 取得新資料後執行渲染
+            });
+        }
+
+        // 獨立出的渲染函式：負責過濾搜尋字串並畫出 HTML
+>>>>>>> 54d3e5104959a044af1c8104e76449e7d39a4c9e
         function renderPosts() {
             const postsContainer = document.getElementById('postsContainer');
             postsContainer.innerHTML = ''; 
 
+<<<<<<< HEAD
             const keyword = document.getElementById('searchGame').value.toLowerCase().trim();
 
+=======
+            // 取得搜尋框內的文字（並轉小寫，實現不分大小寫搜尋）
+            const keyword = document.getElementById('searchGame').value.toLowerCase().trim();
+
+            // 篩選出遊戲名稱符合關鍵字的貼文
+>>>>>>> 54d3e5104959a044af1c8104e76449e7d39a4c9e
             const filteredPosts = allPosts.filter(post => {
                 const gameName = post.gameName ? post.gameName.toLowerCase() : '';
                 return gameName.includes(keyword);
@@ -290,7 +329,10 @@
                 
                 const showBtn = currentUser && currentUser.uid === data.userId ? 'inline-block' : 'none';
                 const videoHtml = formatVideoEmbed(data.videoUrl);
+<<<<<<< HEAD
                 const qaHtml = formatQASection(data.qaQuestion, data.qaAnswer);
+=======
+>>>>>>> 54d3e5104959a044af1c8104e76449e7d39a4c9e
 
                 postEl.innerHTML = `
                     <h3>${data.title}</h3>
@@ -300,7 +342,10 @@
                     </div>
                     <p class="post-content">${data.content}</p>
                     ${videoHtml}
+<<<<<<< HEAD
                     ${qaHtml}
+=======
+>>>>>>> 54d3e5104959a044af1c8104e76449e7d39a4c9e
                     <div class="action-group">
                         <button class="btn edit-btn" style="display:${showBtn}" data-id="${data.id}">編輯</button>
                         <button class="btn delete-btn" style="display:${showBtn}" data-id="${data.id}">刪除</button>
@@ -309,6 +354,7 @@
                 postsContainer.appendChild(postEl);
             });
 
+<<<<<<< HEAD
             // 綁定問與答摺疊展開點擊事件
             document.querySelectorAll('.qa-toggle-btn').forEach(btn => {
                 btn.addEventListener('click', (e) => {
@@ -327,6 +373,9 @@
             });
 
             // 重新綁定編輯與刪除事件
+=======
+            // 重新綁定事件
+>>>>>>> 54d3e5104959a044af1c8104e76449e7d39a4c9e
             document.querySelectorAll('.edit-btn').forEach(btn => {
                 btn.addEventListener('click', (e) => startEdit(e.target.getAttribute('data-id')));
             });
@@ -335,10 +384,18 @@
             });
         }
 
+<<<<<<< HEAD
+=======
+        // 監聽搜尋輸入框：當使用者打字時，即時觸發過濾重新渲染
+>>>>>>> 54d3e5104959a044af1c8104e76449e7d39a4c9e
         document.getElementById('searchGame').addEventListener('input', renderPosts);
 
         // === 4. 編輯與刪除細節控制 ===
         function startEdit(id) {
+<<<<<<< HEAD
+=======
+            // 從快取的 allPosts 中直接找出對應的貼文資料，更精準安全
+>>>>>>> 54d3e5104959a044af1c8104e76449e7d39a4c9e
             const postData = allPosts.find(p => p.id === id);
             if (!postData) return;
             
@@ -346,8 +403,11 @@
             document.getElementById('title').value = postData.title || '';
             document.getElementById('content').value = postData.content || '';
             document.getElementById('videoUrl').value = postData.videoUrl || '';
+<<<<<<< HEAD
             document.getElementById('qaQuestion').value = postData.qaQuestion || '';
             document.getElementById('qaAnswer').value = postData.qaAnswer || '';
+=======
+>>>>>>> 54d3e5104959a044af1c8104e76449e7d39a4c9e
 
             document.getElementById('editingPostId').value = id;
             document.getElementById('formTitle').textContent = "✏️ 編輯我的攻略";
@@ -382,6 +442,7 @@
             document.getElementById('cancelEditBtn').style.display = "none";
         }
 
+        // 啟動即時資料監聽
         initPostsListener();
     </script>
 </body>

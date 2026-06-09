@@ -1,49 +1,59 @@
-# 🎮 OurGamerGuide - OGG 遊戲攻略發布系統 (CRUD & Auth)
+# GamerGuide | 玩家攻略分享平台
 
-[![Firebase](https://img.shields.io/badge/Backend-Firebase-FFCA28?style=flat&logo=firebase)](https://firebase.google.com/)
-[![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](https://opensource.org/licenses/MIT)
+這是一個專為玩家打造的即時攻略創作與分享系統。無論你是新手玩家還是遊戲大師，都可以透過本平台快速發布攻略、交流戰術，並利用標籤系統輕鬆管理與篩選遊戲內容。
 
-**GamerGuide** 是一個整合了完整後端雲端服務的玩家創作區平台。本系統透過 **Firebase Authentication** 實作安全的 Google 一鍵登入機制，並結合 **Cloud Firestore** 達成全自動、零延遲的攻略文章 **CRUD (新增、讀取、更新、刪除)** 互動社群。
+## 🚀 專案特點
+
+* **雲端同步：** 採用 Firebase Firestore 即時資料庫，確保攻略發布後，全球玩家能立即看到。
+* **靈活的標籤系統：** 支援自定義標籤，並內建熱門標籤快速點選功能，讓分類更直覺。
+* **多媒體支援：** 自動轉換 YouTube 影片連結與一般影音檔案，讓攻略內容更豐富生動。
+* **身份驗證與權限控管：** 整合 Google 一鍵登入，確保每篇攻略都能追蹤作者，並嚴格執行「僅限作者本人編輯與刪除」的權限保護。
+* **個人成就頁面：** 玩家可隨時進入個人中心查看自己發布的歷史攻略與統計數據。
+
+## 🛠 技術堆疊
+
+* **前端：** HTML5, CSS3, JavaScript (ES6+ Module)
+* **後端/雲端服務：** Firebase
+    * **Authentication:** Google OAuth 提供安全登入。
+    * **Firestore:** NoSQL 即時資料庫，處理攻略存儲與篩選。
+    * **Hosting:** 快速且穩定的靜態網頁託管。
+
+## ⚙️ 快速開始
+
+若要將此專案部署到你的環境，請確保你在 [Firebase Console](https://console.firebase.google.com/) 執行以下設定：
+
+1.  **啟用認證：** 在 Authentication 頁面啟用「Google」登入服務。
+2.  **建立資料庫：** 在 Firestore 中建立 `guides` 集合。
+3.  **設定安全性規則：** 確保資料庫讀寫權限符合你的專案需求（推薦設置僅允許登入使用者建立資料，且僅限作者本人編輯）。
+4.  **填入配置：** 在專案內的 `firebaseConfig` 物件中替換成你自己的 Firebase SDK 配置參數。
+
+## 📂 專案結構
+
+```text
+game-guide/
+├── css/
+│   └── style.css       # 全域樣式與標籤組件樣式
+├── index.html          # 主頁面：攻略發布與列表清單
+└── userProfile.html        # 玩家個人中心
+```
+## 📈 未來規劃
+
+我們持續在優化使用者體驗，未來預計加入：
+
+* [ ] **攻略搜尋功能：** 支援全站關鍵字搜尋。
+* [ ] **互動評論系統：** 讓玩家能針對攻略進行討論與留言。
+* [ ] **收藏功能：** 讓玩家能一鍵收藏喜愛的攻略文章。
+
+## 🤝 參與貢獻
+
+非常歡迎任何開發者提出 Pull Requests 或提交 Issue！讓我們一起打造更好用的遊戲社群工具。
 
 ---
 
-## ✨ 核心系統功能 (Core Features)
+*Powered by GamerGuide Team*
 
-* **🔐 Google 帳號身分驗證 (Firebase Auth)：**
-  * 整合 Google 生態系，支援玩家一鍵登入/登出。
-  * 登入後自動安全擷取玩家的 Google 大頭貼 (`photoURL`) 與公開暱稱 (`displayName`)。
-  * 智慧型介面控制：未登入時顯示鎖定提示，登入後自動解鎖專屬的「撰寫表單」。
+```
 
-* **動態動態 CRUD 系統 (Cloud Firestore)：**
-  * **Create (發表)：** 自動綁定當前登入使用者的 `uid` 與伺服器時間，杜絕匿名冒名發文。
-  * **Read (即時監聽)：** 採用 `onSnapshot` 建立單一即時資料串流。免重整網頁，全網玩家發文秒級同步刷新。
-  * **Update & Delete (權限編輯與刪除)：** * 系統前端會自動比對當前登入者的 `uid` 與文章擁有者的 `userId`。
-    * **只有作者本人**的卡片才會浮現「編輯」與「刪除」按鈕。
-    * 提供「平滑滾動 (Smooth Scroll)」編輯置頂導引，以及防呆刪除確認彈窗。
+OwOb 如果你對這個專案的未來發展還有其他想法，或者需要調整任何說明文字，隨時告訴我！
 
----
-
-## 🛠️ 技術棧 (Tech Stack)
-
-| 技術區塊 | 項目 | 用途說明 |
-| :--- | :--- | :--- |
-| **前端骨架** | HTML5 / CSS3 | 語意化暗黑系視覺排版、動態表單樣式、響應式按鈕組設計 |
-| **核心邏輯** | JavaScript (ES6+ Module) | DOM 操作、異步事件處理 (`async/await`)、狀態切換控制 |
-| **身分驗證** | Firebase Auth | 提供 GoogleAuthProvider 彈窗登入與 `onAuthStateChanged` 狀態監聽 |
-| **資料儲存** | Cloud Firestore | 資料結構化儲存 (`guides` 集合)、多重條件查詢與即時動態快照 |
-
----
-
-## 🗄️ 後端資料欄位結構 (Firestore Data Schema)
-
-在 Firestore 資料庫中，所有攻略皆安全儲存於 `guides` 集合 (Collection) 中，其單一文件 (Document) 的欄位結構設計如下：
-
-```json
-{
-  "gameName": "遊戲名稱 (String)",
-  "title": "攻略標題 (String)",
-  "content": "詳細密技內文 (String)",
-  "userId": "作者的 Firebase Auth UID (String)",
-  "author": "作者 Google 帳號暱稱 (String)",
-  "timestamp": "伺服器建立時間 (Timestamp)"
-}
+```
