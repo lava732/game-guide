@@ -3,8 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<<<<<<< HEAD
-    <title>GamerGuide | 會員攻略發布系統 (含問與答作者標註)</title>
+    <title>GamerGuide | 會員攻略發布系統 (含問與答、即時留言功能)</title>
     <style>
         body { font-family: "Microsoft JhengHei", sans-serif; background-color: #121212; color: #e0e0e0; margin: 0; padding: 0; }
         header { background-color: #1f1f1f; padding: 15px 20px; display: flex; justify-content: space-between; align-items: center; border-bottom: 3px solid #ffcc00; }
@@ -46,27 +45,42 @@
         .post-video { width: 100%; height: 270px; display: block; border: none; }
 
         /* 問與答可摺疊式面板樣式 */
-        .qa-section { margin-top: 15px; background-color: #151515; border: 1px solid #333; border-radius: 6px; overflow: hidden; }
+        .qa-section { margin-top: 15px; background-color: #151515; border: 1px solid #333; border-radius: 6px; overflow: hidden; margin-bottom: 20px; }
         .qa-toggle-btn { background-color: #2a2a2a; color: #ffcc00; width: 100%; text-align: left; padding: 12px 15px; font-weight: bold; border: none; cursor: pointer; display: flex; justify-content: space-between; align-items: center; }
         .qa-toggle-btn:hover { background-color: #333; }
         .qa-content { display: none; padding: 15px; border-top: 1px solid #222; background-color: #1a1a1a; }
         
-        .qa-q { font-weight: bold; color: #4285F4; margin-bottom: 12px; font-size: 15px; } /* 改用藍色凸顯問題 */
+        .qa-q { font-weight: bold; color: #4285F4; margin-bottom: 12px; font-size: 15px; }
         .qa-a-wrapper { display: flex; align-items: flex-start; gap: 8px; }
         .qa-a { color: #ddd; white-space: pre-wrap; padding-left: 5px; border-left: 2px solid #5cb85c; flex: 1; }
         
-        /* 新增：作者回覆專屬特別標籤 */
+        /* 專屬徽章標籤 */
         .author-badge { background-color: #5cb85c; color: #fff; font-size: 11px; padding: 2px 6px; border-radius: 3px; font-weight: bold; white-space: nowrap; margin-top: 2px; }
+
+        /* === 新增：留言區樣式 === */
+        .comment-section { border-top: 1px solid #333; padding-top: 20px; margin-top: 25px; }
+        .comment-title { font-size: 16px; color: #ffcc00; margin-bottom: 15px; font-weight: bold; }
+        .comment-list { display: flex; flex-direction: column; gap: 12px; max-height: 300px; overflow-y: auto; margin-bottom: 15px; padding-right: 5px; }
+        
+        /* 單則留言排版 */
+        .comment-item { background: #181818; padding: 10px 12px; border-radius: 6px; border: 1px solid #252525; display: flex; gap: 10px; align-items: flex-start; }
+        .comment-avatar { width: 28px; height: 28px; border-radius: 50%; border: 1px solid #444; }
+        .comment-body { flex: 1; }
+        .comment-header { font-size: 12px; color: #888; margin-bottom: 4px; display: flex; align-items: center; gap: 6px; flex-wrap: wrap; }
+        .comment-user { font-weight: bold; color: #aaa; }
+        .comment-text { font-size: 14px; color: #ddd; white-space: pre-wrap; }
+
+        /* 留言輸入框 */
+        .comment-form { display: flex; gap: 10px; }
+        .comment-input { flex: 1; padding: 8px 12px; background-color: #2a2a2a; color: #fff; border: 1px solid #444; border-radius: 4px; font-size: 14px; }
+        .comment-submit-btn { background-color: #ffcc00; color: #121212; padding: 8px 15px; font-size: 14px; font-weight: bold; border-radius: 4px; cursor: pointer; white-space: nowrap; border: none; }
+        .comment-login-tip { font-size: 13px; color: #666; font-style: italic; text-align: center; background: #161616; padding: 8px; border-radius: 4px; }
 
         /* 功能按鈕組 */
         .action-group { position: absolute; top: 20px; right: 20px; display: flex; gap: 8px; }
         .edit-btn { background-color: #5cb85c; color: white; display: none; }
         .delete-btn { background-color: #d9534f; color: white; display: none; }
     </style>
-=======
-    <link rel="stylesheet" href="css/style.css" >
-    <title>GamerGuide | 攻略發布系統</title>
->>>>>>> 54d3e5104959a044af1c8104e76449e7d39a4c9e
 </head>
 <body>
 
@@ -105,7 +119,6 @@
                 <div class="form-group">
                     <label for="videoUrl">影片網址連結 (選填)：</label>
                     <input type="url" id="videoUrl" placeholder="請貼上影片連結 (支援 MP4、WebM 或 YouTube 網址)">
-<<<<<<< HEAD
                 </div>
 
                 <div style="background: #252525; padding: 15px; border-radius: 6px; margin-bottom: 15px; border-left: 3px solid #5cb85c;">
@@ -118,8 +131,6 @@
                         <label for="qaAnswer">詳細解答 (A)：</label>
                         <textarea id="qaAnswer" placeholder="例如：在第一章村莊左側的老鐵匠家後方寶箱內..." style="min-height: 80px;"></textarea>
                     </div>
-=======
->>>>>>> 54d3e5104959a044af1c8104e76449e7d39a4c9e
                 </div>
 
                 <button type="submit" id="formSubmitBtn" class="btn submit-btn">發布攻略</button>
@@ -162,6 +173,7 @@
 
         let currentUser = null; 
         let allPosts = []; 
+        let commentsListeners = {}; // 用來存放每篇攻略的即時留言監聽器
 
         // === 1. 登入/登出邏輯 (純彈窗模式) ===
         document.getElementById('loginBtn').addEventListener('click', () => {
@@ -187,7 +199,6 @@
                 document.getElementById('postBox').style.display = 'none';
                 resetForm();
             }
-            // 狀態切換時重新渲染列表（確保編輯/刪除按鈕顯示正確）
             renderPosts(); 
         });
 
@@ -205,7 +216,7 @@
             }
         }
 
-        // 變更：問與答區塊輔助函式（在 A 的區塊加入特別標註徽章）
+        // 問與答區塊輔助函式
         function formatQASection(q, a) {
             if (!q || !a) return ''; 
             return `
@@ -261,31 +272,32 @@
             }
         });
 
-        // === 3. 即時同步下載資料與渲染 (整合搜尋邏輯) ===
+        // === 3. 即時同步下載資料與渲染 ===
         function initPostsListener() {
             const q = query(collection(db, "guides"), orderBy("timestamp", "desc"));
             
             onSnapshot(q, (snapshot) => {
-                allPosts = []; // 清空暫存
+                // 先取消現有所有的留言監聽器，避免記憶體洩漏與重複監聽
+                Object.values(commentsListeners).forEach(unsub => unsub());
+                commentsListeners = {};
+
+                allPosts = []; 
                 snapshot.forEach((doc) => {
                     allPosts.push({
                         id: doc.id,
                         ...doc.data()
                     });
                 });
-                renderPosts(); // 取得新資料後執行渲染
+                renderPosts(); 
             });
         }
 
-        // 獨立出的渲染函式：負責過濾搜尋字串並畫出 HTML
         function renderPosts() {
             const postsContainer = document.getElementById('postsContainer');
             postsContainer.innerHTML = ''; 
 
-            // 取得搜尋框內的文字（並轉小寫，實現不分大小寫搜尋）
             const keyword = document.getElementById('searchGame').value.toLowerCase().trim();
 
-            // 篩選出遊戲名稱符合關鍵字的貼文
             const filteredPosts = allPosts.filter(post => {
                 const gameName = post.gameName ? post.gameName.toLowerCase() : '';
                 return gameName.includes(keyword);
@@ -304,6 +316,7 @@
                 const videoHtml = formatVideoEmbed(data.videoUrl);
                 const qaHtml = formatQASection(data.qaQuestion, data.qaAnswer);
 
+                // 動態生成帶有獨立留言板區塊的 HTML
                 postEl.innerHTML = `
                     <h3>${data.title}</h3>
                     <div class="meta">
@@ -313,15 +326,34 @@
                     <p class="post-content">${data.content}</p>
                     ${videoHtml}
                     ${qaHtml}
+                    
+                    <div class="comment-section">
+                        <div class="comment-title">💬 玩家討論區</div>
+                        <div class="comment-list" id="comments-${data.id}">
+                            <p style="color:#666; font-size:13px;">載入留言中...</p>
+                        </div>
+                        ${currentUser ? `
+                            <form class="comment-form" data-postid="${data.id}">
+                                <input type="text" class="comment-input" placeholder="說點什麼吧..." required>
+                                <button type="submit" class="comment-submit-btn">留言</button>
+                            </form>
+                        ` : `
+                            <div class="comment-login-tip">請先於上方登入帳號，即可參與討論。</div>
+                        `}
+                    </div>
+
                     <div class="action-group">
                         <button class="btn edit-btn" style="display:${showBtn}" data-id="${data.id}">編輯</button>
                         <button class="btn delete-btn" style="display:${showBtn}" data-id="${data.id}">刪除</button>
                     </div>
                 `;
                 postsContainer.appendChild(postEl);
+
+                // 為這篇攻略啟動「子集合留言」的即時監聽器
+                initCommentsListener(data.id, data.userId);
             });
 
-            // 綁定問與答摺疊展開點擊事件
+            // 補上問與答摺疊面板的事件繫結
             document.querySelectorAll('.qa-toggle-btn').forEach(btn => {
                 btn.addEventListener('click', (e) => {
                     const currentBtn = e.currentTarget;
@@ -338,6 +370,11 @@
                 });
             });
 
+            // 繫結留言表單的發送事件
+            document.querySelectorAll('.comment-form').forEach(cForm => {
+                cForm.addEventListener('submit', handleCommentSubmit);
+            });
+
             // 重新綁定編輯與刪除事件
             document.querySelectorAll('.edit-btn').forEach(btn => {
                 btn.addEventListener('click', (e) => startEdit(e.target.getAttribute('data-id')));
@@ -347,12 +384,84 @@
             });
         }
 
-        // 監聽搜尋輸入框：當使用者打字時，即時觸發過濾重新渲染
+        // === 新增：子留言即時監聽與渲染邏輯 ===
+        function initCommentsListener(postId, authorId) {
+            const commentsRef = collection(db, "guides", postId, "comments");
+            const q = query(commentsRef, orderBy("timestamp", "asc"));
+
+            // 註冊即時監聽器，並存入全域物件以便管理
+            commentsListeners[postId] = onSnapshot(q, (snapshot) => {
+                const commentListEl = document.getElementById(`comments-${postId}`);
+                if (!commentListEl) return;
+
+                if (snapshot.empty) {
+                    commentListEl.innerHTML = `<p style="color:#666; font-size:13px; font-style:italic; margin:5px 0;">目前還沒有人留言，快來當第一個！</p>`;
+                    return;
+                }
+
+                commentListEl.innerHTML = '';
+                snapshot.forEach((doc) => {
+                    const cData = doc.data();
+                    const item = document.createElement('div');
+                    item.classList.add('comment-item');
+
+                    // 判斷該留言者是不是這篇攻略的作者本人
+                    const isAuthorOfPost = cData.userId === authorId;
+                    const authorTagHtml = isAuthorOfPost ? `<span class="author-badge" style="padding:1px 4px; font-size:10px;">作者</span>` : '';
+
+                    // 格式化時間
+                    const timeString = cData.timestamp ? new Date(cData.timestamp.toDate()).toLocaleString('zh-TW', {hour12:false}) : '剛才';
+
+                    item.innerHTML = `
+                        <img class="comment-avatar" src="${cData.userAvatar || 'https://www.gravatar.com/avatar/?d=mp'}" alt="avatar">
+                        <div class="comment-body">
+                            <div class="comment-header">
+                                <span class="comment-user">${cData.userName}</span>
+                                ${authorTagHtml}
+                                <span>• ${timeString}</span>
+                            </div>
+                            <div class="comment-text">${cData.text}</div>
+                        </div>
+                    `;
+                    commentListEl.appendChild(item);
+                });
+                // 自動將留言區滾動到最底部
+                commentListEl.scrollTop = commentListEl.scrollHeight;
+            });
+        }
+
+        // === 新增：處發送留言動作 ===
+        async function handleCommentSubmit(e) {
+            e.preventDefault();
+            if (!currentUser) return alert('請先登入帳號！');
+
+            const targetForm = e.currentTarget;
+            const postId = targetForm.getAttribute('data-postid');
+            const inputEl = targetForm.querySelector('.comment-input');
+            const text = inputEl.value.trim();
+
+            if (!text) return;
+
+            try {
+                const commentsRef = collection(db, "guides", postId, "comments");
+                await addDoc(commentsRef, {
+                    text: text,
+                    userId: currentUser.uid,
+                    userName: currentUser.displayName,
+                    userAvatar: currentUser.photoURL,
+                    timestamp: new Date()
+                });
+                inputEl.value = ''; // 發送成功清空輸入框
+            } catch (error) {
+                console.error("發送留言失敗:", error);
+                alert("留言發送失敗，請稍後再試。");
+            }
+        }
+
         document.getElementById('searchGame').addEventListener('input', renderPosts);
 
         // === 4. 編輯與刪除細節控制 ===
         function startEdit(id) {
-            // 從快取的 allPosts 中直接找出對應的貼文資料，更精準安全
             const postData = allPosts.find(p => p.id === id);
             if (!postData) return;
             
@@ -396,7 +505,6 @@
             document.getElementById('cancelEditBtn').style.display = "none";
         }
 
-        // 啟動即時資料監聽
         initPostsListener();
     </script>
 </body>
