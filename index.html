@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>GamerGuide | 會員攻略發布系統 (含問與答、即時留言功能)</title>
+    <title>GamerGuide | 會員攻略發布系統 (含留言進階管理功能)</title>
     <style>
         body { font-family: "Microsoft JhengHei", sans-serif; background-color: #121212; color: #e0e0e0; margin: 0; padding: 0; }
         header { background-color: #1f1f1f; padding: 15px 20px; display: flex; justify-content: space-between; align-items: center; border-bottom: 3px solid #ffcc00; }
@@ -57,18 +57,26 @@
         /* 專屬徽章標籤 */
         .author-badge { background-color: #5cb85c; color: #fff; font-size: 11px; padding: 2px 6px; border-radius: 3px; font-weight: bold; white-space: nowrap; margin-top: 2px; }
 
-        /* === 新增：留言區樣式 === */
+        /* 留言區樣式 */
         .comment-section { border-top: 1px solid #333; padding-top: 20px; margin-top: 25px; }
         .comment-title { font-size: 16px; color: #ffcc00; margin-bottom: 15px; font-weight: bold; }
-        .comment-list { display: flex; flex-direction: column; gap: 12px; max-height: 300px; overflow-y: auto; margin-bottom: 15px; padding-right: 5px; }
+        .comment-list { display: flex; flex-direction: column; gap: 12px; max-height: 350px; overflow-y: auto; margin-bottom: 15px; padding-right: 5px; }
         
         /* 單則留言排版 */
-        .comment-item { background: #181818; padding: 10px 12px; border-radius: 6px; border: 1px solid #252525; display: flex; gap: 10px; align-items: flex-start; }
+        .comment-item { background: #181818; padding: 10px 12px; border-radius: 6px; border: 1px solid #252525; display: flex; gap: 10px; align-items: flex-start; position: relative; }
         .comment-avatar { width: 28px; height: 28px; border-radius: 50%; border: 1px solid #444; }
-        .comment-body { flex: 1; }
+        .comment-body { flex: 1; padding-right: 80px; } /* 為右側按鈕留空間 */
         .comment-header { font-size: 12px; color: #888; margin-bottom: 4px; display: flex; align-items: center; gap: 6px; flex-wrap: wrap; }
         .comment-user { font-weight: bold; color: #aaa; }
         .comment-text { font-size: 14px; color: #ddd; white-space: pre-wrap; }
+
+        /* 🔥 新增：無底色留言功能按鈕組 */
+        .comment-actions { position: absolute; top: 10px; right: 12px; display: flex; gap: 8px; }
+        .comment-action-btn { background: none; border: none; padding: 0; font-size: 12px; font-weight: bold; cursor: pointer; transition: color 0.2s; }
+        .c-edit-btn { color: #5cb85c; }
+        .c-edit-btn:hover { color: #85e085; text-decoration: underline; }
+        .c-delete-btn { color: #d9534f; }
+        .c-delete-btn:hover { color: #ff736e; text-decoration: underline; }
 
         /* 留言輸入框 */
         .comment-form { display: flex; gap: 10px; }
@@ -76,7 +84,7 @@
         .comment-submit-btn { background-color: #ffcc00; color: #121212; padding: 8px 15px; font-size: 14px; font-weight: bold; border-radius: 4px; cursor: pointer; white-space: nowrap; border: none; }
         .comment-login-tip { font-size: 13px; color: #666; font-style: italic; text-align: center; background: #161616; padding: 8px; border-radius: 4px; }
 
-        /* 功能按鈕組 */
+        /* 主文章功能按鈕組 */
         .action-group { position: absolute; top: 20px; right: 20px; display: flex; gap: 8px; }
         .edit-btn { background-color: #5cb85c; color: white; display: none; }
         .delete-btn { background-color: #d9534f; color: white; display: none; }
@@ -154,7 +162,6 @@
         import { getAuth, signInWithPopup, GoogleAuthProvider, signOut, onAuthStateChanged } from "https://www.gstatic.com/firebasejs/10.8.0/firebase-auth.js";
         import { getFirestore, collection, addDoc, doc, updateDoc, deleteDoc, query, orderBy, onSnapshot } from "https://www.gstatic.com/firebasejs/10.8.0/firebase-firestore.js";
 
-        // Firebase 配置
         const firebaseConfig = {
             apiKey: "AIzaSyC1f_sypRrrpUKym4VdySlriFb_WGP64s0",
             authDomain: "project-78ab8.firebaseapp.com",
@@ -165,7 +172,6 @@
             measurementId: "G-62ZWJ9JLJD"
         };
 
-        // 初始化 Firebase
         const app = initializeApp(firebaseConfig);
         const auth = getAuth(app);
         const db = getFirestore(app);
@@ -173,9 +179,9 @@
 
         let currentUser = null; 
         let allPosts = []; 
-        let commentsListeners = {}; // 用來存放每篇攻略的即時留言監聽器
+        let commentsListeners = {}; 
 
-        // === 1. 登入/登出邏輯 (純彈窗模式) ===
+        // === 1. 登入/登出邏輯 ===
         document.getElementById('loginBtn').addEventListener('click', () => {
             signInWithPopup(auth, provider).catch(err => console.error("彈窗登入失敗:", err));
         });
@@ -202,12 +208,10 @@
             renderPosts(); 
         });
 
-        // 影片連結解析輔助函式
         function formatVideoEmbed(url) {
             if (!url) return '';
             const youtubeRegex = /^.*(youtu.be\/|v\/|u\/\w\/|embed\/|watch\?v=|\&v=)([^#\&\?]*).*/;
             const match = url.match(youtubeRegex);
-            
             if (match && match[2].length === 11) {
                 const youtubeId = match[2];
                 return `<div class="video-wrapper"><iframe class="post-video" src="https://www.youtube.com/embed/${youtubeId}" allowfullscreen></iframe></div>`;
@@ -216,7 +220,6 @@
             }
         }
 
-        // 問與答區塊輔助函式
         function formatQASection(q, a) {
             if (!q || !a) return ''; 
             return `
@@ -275,18 +278,12 @@
         // === 3. 即時同步下載資料與渲染 ===
         function initPostsListener() {
             const q = query(collection(db, "guides"), orderBy("timestamp", "desc"));
-            
             onSnapshot(q, (snapshot) => {
-                // 先取消現有所有的留言監聽器，避免記憶體洩漏與重複監聽
                 Object.values(commentsListeners).forEach(unsub => unsub());
                 commentsListeners = {};
-
                 allPosts = []; 
                 snapshot.forEach((doc) => {
-                    allPosts.push({
-                        id: doc.id,
-                        ...doc.data()
-                    });
+                    allPosts.push({ id: doc.id, ...doc.data() });
                 });
                 renderPosts(); 
             });
@@ -297,7 +294,6 @@
             postsContainer.innerHTML = ''; 
 
             const keyword = document.getElementById('searchGame').value.toLowerCase().trim();
-
             const filteredPosts = allPosts.filter(post => {
                 const gameName = post.gameName ? post.gameName.toLowerCase() : '';
                 return gameName.includes(keyword);
@@ -316,7 +312,6 @@
                 const videoHtml = formatVideoEmbed(data.videoUrl);
                 const qaHtml = formatQASection(data.qaQuestion, data.qaAnswer);
 
-                // 動態生成帶有獨立留言板區塊的 HTML
                 postEl.innerHTML = `
                     <h3>${data.title}</h3>
                     <div class="meta">
@@ -348,18 +343,15 @@
                     </div>
                 `;
                 postsContainer.appendChild(postEl);
-
-                // 為這篇攻略啟動「子集合留言」的即時監聽器
                 initCommentsListener(data.id, data.userId);
             });
 
-            // 補上問與答摺疊面板的事件繫結
+            // 事件繫結
             document.querySelectorAll('.qa-toggle-btn').forEach(btn => {
                 btn.addEventListener('click', (e) => {
                     const currentBtn = e.currentTarget;
                     const qaContent = currentBtn.nextElementSibling;
                     const arrow = currentBtn.querySelector('span:last-child');
-                    
                     if (qaContent.style.display === 'block') {
                         qaContent.style.display = 'none';
                         arrow.textContent = '▼';
@@ -370,12 +362,10 @@
                 });
             });
 
-            // 繫結留言表單的發送事件
             document.querySelectorAll('.comment-form').forEach(cForm => {
                 cForm.addEventListener('submit', handleCommentSubmit);
             });
 
-            // 重新綁定編輯與刪除事件
             document.querySelectorAll('.edit-btn').forEach(btn => {
                 btn.addEventListener('click', (e) => startEdit(e.target.getAttribute('data-id')));
             });
@@ -384,12 +374,11 @@
             });
         }
 
-        // === 新增：子留言即時監聽與渲染邏輯 ===
+        // === 4. 子留言即時監聽與進階權限控制 ===
         function initCommentsListener(postId, authorId) {
             const commentsRef = collection(db, "guides", postId, "comments");
             const q = query(commentsRef, orderBy("timestamp", "asc"));
 
-            // 註冊即時監聽器，並存入全域物件以便管理
             commentsListeners[postId] = onSnapshot(q, (snapshot) => {
                 const commentListEl = document.getElementById(`comments-${postId}`);
                 if (!commentListEl) return;
@@ -401,16 +390,44 @@
 
                 commentListEl.innerHTML = '';
                 snapshot.forEach((doc) => {
+                    const cId = doc.id;
                     const cData = doc.data();
                     const item = document.createElement('div');
                     item.classList.add('comment-item');
 
-                    // 判斷該留言者是不是這篇攻略的作者本人
                     const isAuthorOfPost = cData.userId === authorId;
                     const authorTagHtml = isAuthorOfPost ? `<span class="author-badge" style="padding:1px 4px; font-size:10px;">作者</span>` : '';
-
-                    // 格式化時間
                     const timeString = cData.timestamp ? new Date(cData.timestamp.toDate()).toLocaleString('zh-TW', {hour12:false}) : '剛才';
+
+                    // 🛠️ 權限核心計算：
+                    const isMe = currentUser && currentUser.uid === cData.userId;
+                    const amIArticleAuthor = currentUser && currentUser.uid === authorId;
+                    
+                    // 檢查是否在 5 分鐘內 (5 * 60 * 1000 毫秒)
+                    let isWithinFiveMinutes = false;
+                    if (cData.timestamp) {
+                        const commentTime = cData.timestamp.toDate().getTime();
+                        const nowTime = new Date().getTime();
+                        isWithinFiveMinutes = (nowTime - commentTime) < 300000; 
+                    } else {
+                        isWithinFiveMinutes = true; // 剛發出的話算在內
+                    }
+
+                    // 決定要不要顯示按鈕（無底色）
+                    let actionButtonsHtml = '';
+                    if (currentUser) {
+                        const canEdit = (isMe && isWithinFiveMinutes) || amIArticleAuthor;
+                        const canDelete = isMe || amIArticleAuthor; // 自己的留言或文章作者可隨時刪除
+
+                        actionButtonsHtml = `<div class="comment-actions">`;
+                        if (canEdit) {
+                            actionButtonsHtml += `<button class="comment-action-btn c-edit-btn" data-postid="${postId}" data-commentid="${cId}" data-text="${cData.text.replace(/"/g, '&quot;')}">編輯</button>`;
+                        }
+                        if (canDelete) {
+                            actionButtonsHtml += `<button class="comment-action-btn c-delete-btn" data-postid="${postId}" data-commentid="${cId}">刪除</button>`;
+                        }
+                        actionButtonsHtml += `</div>`;
+                    }
 
                     item.innerHTML = `
                         <img class="comment-avatar" src="${cData.userAvatar || 'https://www.gravatar.com/avatar/?d=mp'}" alt="avatar">
@@ -420,17 +437,22 @@
                                 ${authorTagHtml}
                                 <span>• ${timeString}</span>
                             </div>
-                            <div class="comment-text">${cData.text}</div>
+                            <div class="comment-text" id="text-${cId}">${cData.text}</div>
                         </div>
+                        ${actionButtonsHtml}
                     `;
                     commentListEl.appendChild(item);
                 });
-                // 自動將留言區滾動到最底部
+
+                // 綁定無底色留言按鈕事件
+                commentListEl.querySelectorAll('.c-edit-btn').forEach(b => b.addEventListener('click', handleCommentEdit));
+                commentListEl.querySelectorAll('.c-delete-btn').forEach(b => b.addEventListener('click', handleCommentDelete));
+                
                 commentListEl.scrollTop = commentListEl.scrollHeight;
             });
         }
 
-        // === 新增：處發送留言動作 ===
+        // === 5. 新增/修改/刪除留言運作函式 ===
         async function handleCommentSubmit(e) {
             e.preventDefault();
             if (!currentUser) return alert('請先登入帳號！');
@@ -451,16 +473,50 @@
                     userAvatar: currentUser.photoURL,
                     timestamp: new Date()
                 });
-                inputEl.value = ''; // 發送成功清空輸入框
+                inputEl.value = '';
             } catch (error) {
-                console.error("發送留言失敗:", error);
-                alert("留言發送失敗，請稍後再試。");
+                console.error(error);
+            }
+        }
+
+        async function handleCommentEdit(e) {
+            const postId = e.target.getAttribute('data-postid');
+            const commentId = e.target.getAttribute('data-commentid');
+            const oldText = e.target.getAttribute('data-text');
+
+            const newText = prompt("✏️ 請輸入修改後的留言內容：", oldText);
+            if (newText === null) return; // 點擊取消
+            if (!newText.trim()) return alert("留言內容不能為空！");
+
+            try {
+                const commentRef = doc(db, "guides", postId, "comments", commentId);
+                await updateDoc(commentRef, { text: newText.trim() });
+                alert("📝 留言修改成功！");
+            } catch (error) {
+                console.error(error);
+                alert("修改失敗，可能已超過 5 分鐘時限或無管理權限。");
+            }
+        }
+
+        async function handleCommentDelete(e) {
+            if (!confirm("🗑️ 確定要刪除這條留言嗎？")) return;
+
+            const postId = e.target.getAttribute('data-postid');
+            const commentId = e.target.getAttribute('data-commentid');
+
+            try {
+                const commentRef = doc(db, "guides", postId, "comments", commentId);
+                await deleteDoc(commentRef);
+                alert("🗑️ 留言已成功刪除！");
+            } catch (error) {
+                console.error(error);
+                alert("刪除失敗，權限不足。");
             }
         }
 
         document.getElementById('searchGame').addEventListener('input', renderPosts);
 
-        // === 4. 編輯與刪除細節控制 ===
+        // === 6. 主文章控制 ===
         function startEdit(id) {
             const postData = allPosts.find(p => p.id === id);
             if (!postData) return;
@@ -490,7 +546,6 @@
                     }
                 } catch (error) {
                     console.error(error);
-                    alert('刪除失敗，請確認您的權限。');
                 }
             }
         }
