@@ -3,13 +3,12 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>GamerGuide | 會員攻略發布系統 (含留言進階管理功能)</title>
+    <title>GamerGuide | 會員攻略發布系統 (含回覆功能)</title>
     <style>
         body { font-family: "Microsoft JhengHei", sans-serif; background-color: #121212; color: #e0e0e0; margin: 0; padding: 0; }
         header { background-color: #1f1f1f; padding: 15px 20px; display: flex; justify-content: space-between; align-items: center; border-bottom: 3px solid #ffcc00; }
         h1 { color: #ffcc00; margin: 0; font-size: 24px; }
         
-        /* 登入狀態按鈕 */
         .auth-panel { display: flex; align-items: center; gap: 10px; }
         .user-avatar { width: 35px; height: 35px; border-radius: 50%; border: 2px solid #ffcc00; display: none; }
         .btn { padding: 8px 15px; border: none; border-radius: 4px; font-weight: bold; cursor: pointer; }
@@ -28,7 +27,7 @@
         .form-group textarea { resize: vertical; min-height: 120px; }
         .submit-btn { background-color: #ffcc00; color: #121212; font-size: 16px; font-weight: bold; width: 100%; }
 
-        /* 搜尋區塊樣式 */
+        /* 搜尋區塊 */
         .search-box { background-color: #1f1f1f; padding: 15px 20px; border-radius: 8px; margin-bottom: 25px; border: 1px solid #333; display: flex; align-items: center; gap: 10px; }
         .search-box label { font-weight: bold; color: #ffcc00; white-space: nowrap; }
         .search-box input { flex: 1; padding: 10px; background-color: #2a2a2a; color: #fff; border: 1px solid #444; border-radius: 4px; }
@@ -40,11 +39,9 @@
         .meta span { margin-right: 15px; background: #333; padding: 3px 8px; border-radius: 4px; }
         .post-content { white-space: pre-wrap; margin-bottom: 20px; }
         
-        /* 影片可視化小窗口樣式 */
         .video-wrapper { max-width: 480px; margin: 15px 0 20px 0; border-radius: 6px; overflow: hidden; background: #000; box-shadow: 0 4px 10px rgba(0,0,0,0.5); }
         .post-video { width: 100%; height: 270px; display: block; border: none; }
 
-        /* 問與答可摺疊式面板樣式 */
         .qa-section { margin-top: 15px; background-color: #151515; border: 1px solid #333; border-radius: 6px; overflow: hidden; margin-bottom: 20px; }
         .qa-toggle-btn { background-color: #2a2a2a; color: #ffcc00; width: 100%; text-align: left; padding: 12px 15px; font-weight: bold; border: none; cursor: pointer; display: flex; justify-content: space-between; align-items: center; }
         .qa-toggle-btn:hover { background-color: #333; }
@@ -54,37 +51,46 @@
         .qa-a-wrapper { display: flex; align-items: flex-start; gap: 8px; }
         .qa-a { color: #ddd; white-space: pre-wrap; padding-left: 5px; border-left: 2px solid #5cb85c; flex: 1; }
         
-        /* 專屬徽章標籤 */
         .author-badge { background-color: #5cb85c; color: #fff; font-size: 11px; padding: 2px 6px; border-radius: 3px; font-weight: bold; white-space: nowrap; margin-top: 2px; }
 
-        /* 留言區樣式 */
+        /* 留言區 */
         .comment-section { border-top: 1px solid #333; padding-top: 20px; margin-top: 25px; }
         .comment-title { font-size: 16px; color: #ffcc00; margin-bottom: 15px; font-weight: bold; }
-        .comment-list { display: flex; flex-direction: column; gap: 12px; max-height: 350px; overflow-y: auto; margin-bottom: 15px; padding-right: 5px; }
+        .comment-list { display: flex; flex-direction: column; gap: 12px; max-height: 450px; overflow-y: auto; margin-bottom: 15px; padding-right: 5px; }
         
-        /* 單則留言排版 */
+        /* 留言外殼（含回覆排版） */
+        .comment-group { display: flex; flex-direction: column; gap: 8px; }
+        
         .comment-item { background: #181818; padding: 10px 12px; border-radius: 6px; border: 1px solid #252525; display: flex; gap: 10px; align-items: flex-start; position: relative; }
         .comment-avatar { width: 28px; height: 28px; border-radius: 50%; border: 1px solid #444; }
-        .comment-body { flex: 1; padding-right: 80px; } /* 為右側按鈕留空間 */
+        .comment-body { flex: 1; padding-right: 110px; } /* 寬度稍微加寬容納三個按鈕 */
         .comment-header { font-size: 12px; color: #888; margin-bottom: 4px; display: flex; align-items: center; gap: 6px; flex-wrap: wrap; }
         .comment-user { font-weight: bold; color: #aaa; }
         .comment-text { font-size: 14px; color: #ddd; white-space: pre-wrap; }
 
-        /* 🔥 新增：無底色留言功能按鈕組 */
+        /* 子回覆縮進樣式 */
+        .reply-item { margin-left: 35px; background: #141414; border-left: 2px solid #444; border-radius: 0 6px 6px 0; }
+
+        /* 無底色功能按鈕組 */
         .comment-actions { position: absolute; top: 10px; right: 12px; display: flex; gap: 8px; }
         .comment-action-btn { background: none; border: none; padding: 0; font-size: 12px; font-weight: bold; cursor: pointer; transition: color 0.2s; }
+        .c-reply-btn { color: #4285F4; }
+        .c-reply-btn:hover { color: #70a5ff; text-decoration: underline; }
         .c-edit-btn { color: #5cb85c; }
         .c-edit-btn:hover { color: #85e085; text-decoration: underline; }
         .c-delete-btn { color: #d9534f; }
         .c-delete-btn:hover { color: #ff736e; text-decoration: underline; }
 
-        /* 留言輸入框 */
-        .comment-form { display: flex; gap: 10px; }
-        .comment-input { flex: 1; padding: 8px 12px; background-color: #2a2a2a; color: #fff; border: 1px solid #444; border-radius: 4px; font-size: 14px; }
-        .comment-submit-btn { background-color: #ffcc00; color: #121212; padding: 8px 15px; font-size: 14px; font-weight: bold; border-radius: 4px; cursor: pointer; white-space: nowrap; border: none; }
+        /* 動態回覆輸入框外殼 */
+        .reply-form-wrapper { margin-left: 35px; margin-top: 2px; margin-bottom: 5px; display: none; }
+
+        /* 留言與回覆共用輸入框底層 */
+        .comment-form, .reply-form { display: flex; gap: 10px; }
+        .comment-input, .reply-input { flex: 1; padding: 8px 12px; background-color: #2a2a2a; color: #fff; border: 1px solid #444; border-radius: 4px; font-size: 14px; }
+        .comment-submit-btn, .reply-submit-btn { background-color: #ffcc00; color: #121212; padding: 8px 15px; font-size: 14px; font-weight: bold; border-radius: 4px; cursor: pointer; white-space: nowrap; border: none; }
         .comment-login-tip { font-size: 13px; color: #666; font-style: italic; text-align: center; background: #161616; padding: 8px; border-radius: 4px; }
 
-        /* 主文章功能按鈕組 */
+        /* 主文章按鈕 */
         .action-group { position: absolute; top: 20px; right: 20px; display: flex; gap: 8px; }
         .edit-btn { background-color: #5cb85c; color: white; display: none; }
         .delete-btn { background-color: #d9534f; color: white; display: none; }
@@ -271,7 +277,6 @@
                 }
             } catch (error) {
                 console.error(error);
-                alert('操作失敗，請檢查權限或網路狀態。');
             }
         });
 
@@ -346,7 +351,6 @@
                 initCommentsListener(data.id, data.userId);
             });
 
-            // 事件繫結
             document.querySelectorAll('.qa-toggle-btn').forEach(btn => {
                 btn.addEventListener('click', (e) => {
                     const currentBtn = e.currentTarget;
@@ -374,7 +378,7 @@
             });
         }
 
-        // === 4. 子留言即時監聽與進階權限控制 ===
+        // === 4. 子留言即時監聽與進階權限控制 (整合回覆架構) ===
         function initCommentsListener(postId, authorId) {
             const commentsRef = collection(db, "guides", postId, "comments");
             const q = query(commentsRef, orderBy("timestamp", "asc"));
@@ -389,70 +393,127 @@
                 }
 
                 commentListEl.innerHTML = '';
+                
+                // 為了處理回覆功能，我們在前端做分流：一級常規留言 vs 二級子回覆留言
+                const mainComments = [];
+                const replies = [];
+
                 snapshot.forEach((doc) => {
-                    const cId = doc.id;
-                    const cData = doc.data();
-                    const item = document.createElement('div');
-                    item.classList.add('comment-item');
-
-                    const isAuthorOfPost = cData.userId === authorId;
-                    const authorTagHtml = isAuthorOfPost ? `<span class="author-badge" style="padding:1px 4px; font-size:10px;">作者</span>` : '';
-                    const timeString = cData.timestamp ? new Date(cData.timestamp.toDate()).toLocaleString('zh-TW', {hour12:false}) : '剛才';
-
-                    // 🛠️ 權限核心計算：
-                    const isMe = currentUser && currentUser.uid === cData.userId;
-                    const amIArticleAuthor = currentUser && currentUser.uid === authorId;
-                    
-                    // 檢查是否在 5 分鐘內 (5 * 60 * 1000 毫秒)
-                    let isWithinFiveMinutes = false;
-                    if (cData.timestamp) {
-                        const commentTime = cData.timestamp.toDate().getTime();
-                        const nowTime = new Date().getTime();
-                        isWithinFiveMinutes = (nowTime - commentTime) < 300000; 
+                    const item = { id: doc.id, ...doc.data() };
+                    if (item.parentId) {
+                        replies.push(item);
                     } else {
-                        isWithinFiveMinutes = true; // 剛發出的話算在內
+                        mainComments.push(item);
                     }
-
-                    // 決定要不要顯示按鈕（無底色）
-                    let actionButtonsHtml = '';
-                    if (currentUser) {
-                        const canEdit = (isMe && isWithinFiveMinutes) || amIArticleAuthor;
-                        const canDelete = isMe || amIArticleAuthor; // 自己的留言或文章作者可隨時刪除
-
-                        actionButtonsHtml = `<div class="comment-actions">`;
-                        if (canEdit) {
-                            actionButtonsHtml += `<button class="comment-action-btn c-edit-btn" data-postid="${postId}" data-commentid="${cId}" data-text="${cData.text.replace(/"/g, '&quot;')}">編輯</button>`;
-                        }
-                        if (canDelete) {
-                            actionButtonsHtml += `<button class="comment-action-btn c-delete-btn" data-postid="${postId}" data-commentid="${cId}">刪除</button>`;
-                        }
-                        actionButtonsHtml += `</div>`;
-                    }
-
-                    item.innerHTML = `
-                        <img class="comment-avatar" src="${cData.userAvatar || 'https://www.gravatar.com/avatar/?d=mp'}" alt="avatar">
-                        <div class="comment-body">
-                            <div class="comment-header">
-                                <span class="comment-user">${cData.userName}</span>
-                                ${authorTagHtml}
-                                <span>• ${timeString}</span>
-                            </div>
-                            <div class="comment-text" id="text-${cId}">${cData.text}</div>
-                        </div>
-                        ${actionButtonsHtml}
-                    `;
-                    commentListEl.appendChild(item);
                 });
 
-                // 綁定無底色留言按鈕事件
+                // 開始畫留言
+                mainComments.forEach((cData) => {
+                    const commentGroup = document.createElement('div');
+                    commentGroup.classList.add('comment-group');
+
+                    // 1. 產生一級留言的 HTML
+                    commentGroup.innerHTML = createCommentHtml(cData, postId, authorId, false);
+                    
+                    // 2. 篩選出屬於該留言的所有子回覆，並塞入外殼中
+                    const childReplies = replies.filter(r => r.parentId === cData.id);
+                    childReplies.forEach((rData) => {
+                        commentGroup.innerHTML += createCommentHtml(rData, postId, authorId, true);
+                    });
+
+                    // 3. 補上給一級留言動態生成的「隱藏回覆框」
+                    if (currentUser) {
+                        commentGroup.innerHTML += `
+                            <div class="reply-form-wrapper" id="reply-box-${cData.id}">
+                                <form class="reply-form" data-postid="${postId}" data-parentid="${cData.id}">
+                                    <input type="text" class="reply-input" placeholder="回覆 @${cData.userName}..." required>
+                                    <button type="submit" class="reply-submit-btn">送出</button>
+                                </form>
+                            </div>
+                        `;
+                    }
+
+                    commentListEl.appendChild(commentGroup);
+                });
+
+                // 綁定所有無底色功能按鈕事件
+                commentListEl.querySelectorAll('.c-reply-btn').forEach(b => b.addEventListener('click', toggleReplyBox));
                 commentListEl.querySelectorAll('.c-edit-btn').forEach(b => b.addEventListener('click', handleCommentEdit));
                 commentListEl.querySelectorAll('.c-delete-btn').forEach(b => b.addEventListener('click', handleCommentDelete));
+                
+                // 綁定二級回覆表單提交
+                commentListEl.querySelectorAll('.reply-form').forEach(rForm => rForm.addEventListener('submit', handleReplySubmit));
                 
                 commentListEl.scrollTop = commentListEl.scrollHeight;
             });
         }
 
-        // === 5. 新增/修改/刪除留言運作函式 ===
+        // 獨立輔助函式：動態組合留言/回覆的 HTML 區塊
+        function createCommentHtml(cData, postId, authorId, isReply) {
+            const isAuthorOfPost = cData.userId === authorId;
+            const authorTagHtml = isAuthorOfPost ? `<span class="author-badge" style="padding:1px 4px; font-size:10px;">作者</span>` : '';
+            const timeString = cData.timestamp ? new Date(cData.timestamp.toDate()).toLocaleString('zh-TW', {hour12:false}) : '剛才';
+
+            const isMe = currentUser && currentUser.uid === cData.userId;
+            const amIArticleAuthor = currentUser && currentUser.uid === authorId;
+            
+            // 檢查 5 分鐘時限
+            let isWithinFiveMinutes = false;
+            if (cData.timestamp) {
+                const commentTime = cData.timestamp.toDate().getTime();
+                const nowTime = new Date().getTime();
+                isWithinFiveMinutes = (nowTime - commentTime) < 300000; 
+            } else {
+                isWithinFiveMinutes = true;
+            }
+
+            // 👑 權限核心修改：
+            // 編輯按鈕：只有【留言者自己】且【在5分鐘內】才能編輯（攻略作者不能編輯他人留言）
+            const canEdit = isMe && isWithinFiveMinutes;
+            // 刪除按鈕：【留言者自己】或【攻略作者】隨時都能刪除
+            const canDelete = isMe || amIArticleAuthor;
+
+            let actionsHtml = `<div class="comment-actions">`;
+            // 只有「主留言」右側才放「回覆」按鈕，避免無限套娃
+            if (currentUser && !isReply) {
+                actionsHtml += `<button class="comment-action-btn c-reply-btn" data-commentid="${cData.id}">回覆</button>`;
+            }
+            if (canEdit) {
+                actionsHtml += `<button class="comment-action-btn c-edit-btn" data-postid="${postId}" data-commentid="${cData.id}" data-text="${cData.text.replace(/"/g, '&quot;')}">編輯</button>`;
+            }
+            if (canDelete) {
+                actionsHtml += `<button class="comment-action-btn c-delete-btn" data-postid="${postId}" data-commentid="${cData.id}">刪除</button>`;
+            }
+            actionsHtml += `</div>`;
+
+            return `
+                <div class="comment-item ${isReply ? 'reply-item' : ''}">
+                    <img class="comment-avatar" src="${cData.userAvatar || 'https://www.gravatar.com/avatar/?d=mp'}" alt="avatar">
+                    <div class="comment-body">
+                        <div class="comment-header">
+                            <span class="comment-user">${cData.userName}</span>
+                            ${authorTagHtml}
+                            <span>• ${timeString}</span>
+                        </div>
+                        <div class="comment-text">${cData.text}</div>
+                    </div>
+                    ${actionsHtml}
+                </div>
+            `;
+        }
+
+        // 控制回覆輸入框顯示或隱藏
+        function toggleReplyBox(e) {
+            const commentId = e.target.getAttribute('data-commentid');
+            const box = document.getElementById(`reply-box-${commentId}`);
+            if (!box) return;
+            box.style.display = (box.style.display === 'block') ? 'none' : 'block';
+            if (box.style.display === 'block') {
+                box.querySelector('.reply-input').focus();
+            }
+        }
+
+        // === 5. 新增/回覆/修改/刪除留言運作函式 ===
         async function handleCommentSubmit(e) {
             e.preventDefault();
             if (!currentUser) return alert('請先登入帳號！');
@@ -472,8 +533,38 @@
                     userName: currentUser.displayName,
                     userAvatar: currentUser.photoURL,
                     timestamp: new Date()
+                    // parentId 留空，代表這是一級主要留言
                 });
                 inputEl.value = '';
+            } catch (error) {
+                console.error(error);
+            }
+        }
+
+        async function handleReplySubmit(e) {
+            e.preventDefault();
+            if (!currentUser) return alert('請先登入帳號！');
+
+            const targetForm = e.currentTarget;
+            const postId = targetForm.getAttribute('data-postid');
+            const parentId = targetForm.getAttribute('data-parentid');
+            const inputEl = targetForm.querySelector('.reply-input');
+            const text = inputEl.value.trim();
+
+            if (!text) return;
+
+            try {
+                const commentsRef = collection(db, "guides", postId, "comments");
+                await addDoc(commentsRef, {
+                    text: text,
+                    userId: currentUser.uid,
+                    userName: currentUser.displayName,
+                    userAvatar: currentUser.photoURL,
+                    timestamp: new Date(),
+                    parentId: parentId // 帶上父級留言 ID，標記為二級回覆
+                });
+                inputEl.value = '';
+                document.getElementById(`reply-box-${parentId}`).style.display = 'none'; // 送出後自動收合
             } catch (error) {
                 console.error(error);
             }
@@ -484,22 +575,21 @@
             const commentId = e.target.getAttribute('data-commentid');
             const oldText = e.target.getAttribute('data-text');
 
-            const newText = prompt("✏️ 請輸入修改後的留言內容：", oldText);
-            if (newText === null) return; // 點擊取消
-            if (!newText.trim()) return alert("留言內容不能為空！");
+            const newText = prompt("✏️ 請輸入修改後的內容：", oldText);
+            if (newText === null) return; 
+            if (!newText.trim()) return alert("內容不能為空！");
 
             try {
                 const commentRef = doc(db, "guides", postId, "comments", commentId);
                 await updateDoc(commentRef, { text: newText.trim() });
-                alert("📝 留言修改成功！");
+                alert("📝 修改成功！");
             } catch (error) {
-                console.error(error);
-                alert("修改失敗，可能已超過 5 分鐘時限或無管理權限。");
+                alert("修改失敗，可能已超過 5 分鐘時限。");
             }
         }
 
         async function handleCommentDelete(e) {
-            if (!confirm("🗑️ 確定要刪除這條留言嗎？")) return;
+            if (!confirm("🗑️ 確定要刪除這條訊息嗎？（注意：若為主留言，其下方的回覆也將一併不再連動顯示）")) return;
 
             const postId = e.target.getAttribute('data-postid');
             const commentId = e.target.getAttribute('data-commentid');
@@ -507,9 +597,8 @@
             try {
                 const commentRef = doc(db, "guides", postId, "comments", commentId);
                 await deleteDoc(commentRef);
-                alert("🗑️ 留言已成功刪除！");
+                alert("🗑️ 已成功刪除！");
             } catch (error) {
-                console.error(error);
                 alert("刪除失敗，權限不足。");
             }
         }
