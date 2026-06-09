@@ -13,7 +13,6 @@
         <div class="auth-panel">
             <img id="userAvatar" class="user-avatar" src="" alt="頭像">
             <span id="userName" style="display:none;"></span>
-            <a href="userProfile.html" id = "profileLink" class="btn userProfile-btn" style="display: none;">個人中心</a>
             <button id="loginBtn" class="btn login-btn">使用 Google 登入</button>
             <button id="logoutBtn" class="btn logout-btn">登出</button>
         </div>
@@ -97,7 +96,6 @@
             if (user) {
                 currentUser = user;
                 document.getElementById('loginBtn').style.display = 'none';
-                document.getElementById('profileLink').style.display = 'block';
                 document.getElementById('loginReminder').style.display = 'none';
                 document.getElementById('logoutBtn').style.display = 'block';
                 document.getElementById('userAvatar').src = user.photoURL;
@@ -106,7 +104,6 @@
             } else {
                 currentUser = null;
                 document.getElementById('loginBtn').style.display = 'block';
-                document.getElementById('profileLink').style.display = 'none'
                 document.getElementById('loginReminder').style.display = 'block';
                 document.getElementById('logoutBtn').style.display = 'none';
                 document.getElementById('userAvatar').style.display = 'none';
